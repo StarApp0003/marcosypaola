@@ -1,0 +1,6 @@
+{
+  "name": "Marcos & Paola",
+  "description": "Álbum romántico y recuerdos de Marcos y Paola con fotos, videos, notas de amor y contador de aniversario.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
