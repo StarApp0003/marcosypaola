@@ -1,61 +1,44 @@
 workflows:
-  android-debug-apk:
-    name: Marcos & Paola - Debug APK
-    max_build_duration: 60
-    instance_type: linux_x2
-
-    environment:
-      java: 21
-
-    scripts:
-      - name: Set Android SDK location
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
-
-      - name: Verify Gradle and Android environment
-        script: |
-          java -version
-          ./gradlew --version
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
-      - name: Build debug APK
-        script: |
-          chmod +x ./gradlew
-          ./gradlew clean assembleDebug --stacktrace
-
-    artifacts:
-      - app/build/outputs/apk/debug/*.apk
-
   android-release-apk:
     name: Marcos & Paola - Release APK
     max_build_duration: 60
-    instance_type: linux_x2
-
     environment:
       java: 21
 
     scripts:
-      - name: Set Android SDK location
+      - name: Verify Release configuration
         script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+          echo "========================================"
+          echo "MARCOS & PAOLA - RELEASE APK"
+          echo "========================================"
+          test -f settings.gradle.kts || test -f settings.gradle
+          test -f app/build.gradle.kts || test -f app/build.gradle
 
-      - name: Create temporary release keystore
+      - name: Install Gradle 9.3.1
         script: |
-          keytool -genkeypair             -v             -keystore "$CM_BUILD_DIR/codemagic-release.jks"             -storetype JKS             -alias upload             -keyalg RSA             -keysize 2048             -validity 10000             -storepass codemagic             -keypass codemagic             -dname "CN=Marcos & Paola, OU=Android, O=Star App, L=, ST=, C=CU"
+          set -e
+          GRADLE_VERSION="9.3.1"
+          GRADLE_DIR="$HOME/gradle-$GRADLE_VERSION"
+          if [ ! -x "$GRADLE_DIR/bin/gradle" ]; then
+            mkdir -p "$HOME/gradle-download"
+            curl -L --fail --retry 3 \
+              "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+              -o "$HOME/gradle-download/gradle.zip"
+            rm -rf "$GRADLE_DIR"
+            mkdir -p "$HOME/gradle-extract"
+            unzip -q -o "$HOME/gradle-download/gradle.zip" -d "$HOME/gradle-extract"
+            mv "$HOME/gradle-extract/gradle-${GRADLE_VERSION}" "$GRADLE_DIR"
+            rm -rf "$HOME/gradle-extract"
+          fi
+          export PATH="$GRADLE_DIR/bin:$PATH"
+          gradle --version
 
-          export KEYSTORE_PATH="$CM_BUILD_DIR/codemagic-release.jks"
-          export STORE_PASSWORD=codemagic
-          export KEY_PASSWORD=codemagic
-
-          echo "KEYSTORE_PATH=$KEYSTORE_PATH" >> "$CM_ENV"
-          echo "STORE_PASSWORD=$STORE_PASSWORD" >> "$CM_ENV"
-          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$CM_ENV"
-
-      - name: Build release APK
+      - name: Build Release APK
         script: |
-          chmod +x ./gradlew
-          ./gradlew clean assembleRelease --stacktrace
+          set -e
+          GRADLE_VERSION="9.3.1"
+          export PATH="$HOME/gradle-$GRADLE_VERSION/bin:$PATH"
+          gradle --no-daemon --no-configuration-cache clean assembleRelease
 
     artifacts:
       - app/build/outputs/apk/release/*.apk
-      - codemagic-release.jks
