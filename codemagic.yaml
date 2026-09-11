@@ -1,23 +1,23 @@
 workflows:
-  android-debug-apk:
-    name: Build debug APK
-    max_build_duration: 60
+  android-release:
+    name: Build Release APK
+    max_build_duration: 120
     instance_type: linux_x2
+
     environment:
-      java: 21
+      groups: []
+      vars:
+        PACKAGE_NAME: "com.aistudio.marcospaola.lovemem"
+
     scripts:
-      - name: Check project
+      - name: Set Android SDK location
         script: |
-          echo "Working directory: $(pwd)"
-          echo "Project files:"
-          ls -la
-          test -f settings.gradle.kts || test -f settings.gradle
-      - name: Build debug APK
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+
+      - name: Build Release APK
         script: |
-          if [ -x ./gradlew ]; then
-            ./gradlew --no-daemon assembleDebug
-          else
-            gradle --no-daemon assembleDebug
-          fi
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
     artifacts:
-      - app/build/outputs/apk/**/*.apk
+      - app/build/outputs/apk/release/*.apk
